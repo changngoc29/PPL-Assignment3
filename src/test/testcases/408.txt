@@ -1,0 +1,5 @@
+a: integer = 5 + 4;
+        b: float = 3.0;
+        q: boolean = true || false;
+        c: integer = a % b;
+        main: function void () {}

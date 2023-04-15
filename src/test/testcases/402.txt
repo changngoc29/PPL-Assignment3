@@ -1,0 +1,4 @@
+a: integer = 4;
+        c: float;
+        main: function void () {}
+        a: string;

@@ -1,0 +1,6 @@
+a: integer = 5 + 4;
+        b: float = 3.0;
+        c: string = "string" :: "string";
+        g: boolean = 1 < 3.0;
+        q: boolean = true && 1;
+        main: function void () {}

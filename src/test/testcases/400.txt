@@ -1,0 +1,3 @@
+a: integer;
+        c: float;
+        a: float;

@@ -1,0 +1,7 @@
+a: float = 3.0;
+        arr: array [2] of integer = {1,2};
+        test: function integer (c: integer, d: integer) {
+            arr = 30;
+        }
+        b: integer = test(1, "string");
+        main: function void () {}

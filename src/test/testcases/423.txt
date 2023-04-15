@@ -1,0 +1,7 @@
+a: float = 3.0;
+        voidfunc: function void () {}
+        test: function integer (c: integer, d: integer) {
+            voidfunc = 30;
+        }
+        b: integer = test(1, "string");
+        main: function void () {}

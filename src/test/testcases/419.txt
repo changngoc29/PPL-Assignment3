@@ -1,0 +1,4 @@
+a: float = 3.0;
+        test: function integer (c: integer, d: integer) {}
+        b: integer = nofunc(1, 2);
+        main: function void () {}

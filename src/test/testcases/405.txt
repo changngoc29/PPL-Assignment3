@@ -1,0 +1,2 @@
+a: array [2] of float = {1.0 , "string"};
+        main: function void () {}
