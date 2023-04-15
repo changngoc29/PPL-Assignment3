@@ -143,7 +143,8 @@ class StaticChecker(Visitor):
                 for i in range(len(root_typ.dimensions)):
                     if root_typ.dimensions[i] != exp_typ.dimensions[i]:
                         raise IllegalArrayLiteral(ctx)
-                dimensions += root_typ.dimensions
+        if type(root_typ) is ArrayType:
+            dimensions += root_typ.dimensions
         return_typ = root_typ.typ if type(root_typ) is ArrayType else root_typ
         return ArrayType(dimensions, return_typ)
 
@@ -178,7 +179,9 @@ class StaticChecker(Visitor):
 
     def visitBlockStmt(self, ctx, o):
         # inherit NOT DONE
-        [self.visit(x, o) for x in ctx.body]
+        local_o = [{}] + o
+        [self.visit(x, local_o) for x in ctx.body]
+        o = local_o[1:]
 
     def visitIfStmt(self, ctx, o): pass
     def visitForStmt(self, ctx, o): pass
@@ -199,7 +202,6 @@ class StaticChecker(Visitor):
             init_typ = self.visit(ctx.init, o)
             if type(ctx.typ) is AutoType:
                 ctx.typ = init_typ
-                o[ctx.name] = init_typ
             # check type between ctx and init
             elif type(init_typ) is not type(ctx.typ):
                 raise TypeMismatchInVarDecl(ctx)

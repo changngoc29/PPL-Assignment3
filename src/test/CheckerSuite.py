@@ -79,6 +79,7 @@ class CheckerSuite(unittest.TestCase):
 
     def test10(self):
         input = """a: array [2, 3] of integer = {{1, 2, 3}, {1, 3, 4}};
+        c: array [3] of integer = a[1];
         b: array [1, 3] of integer = {{1, 2, 3}, {1, 3, 4}};
         main: function void () {}"""
         expect = "Type mismatch in Variable Declaration: VarDecl(b, ArrayType([1, 3], IntegerType), ArrayLit([ArrayLit([IntegerLit(1), IntegerLit(2), IntegerLit(3)]), ArrayLit([IntegerLit(1), IntegerLit(3), IntegerLit(4)])]))"
