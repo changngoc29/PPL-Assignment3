@@ -1,0 +1,4 @@
+a: boolean = true;
+        main: function void () {
+            if ("string" :: "string") {}
+        }

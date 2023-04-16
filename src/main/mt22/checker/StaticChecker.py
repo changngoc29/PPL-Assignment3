@@ -10,6 +10,13 @@ class Utils:
                 return scope[name]
         return None
 
+    def show_dict(o):
+        for scope in o:
+            print('<<<')
+            for key, value in scope.items():
+                print(key, value)
+            print('>>>')
+
 
 class FunctionType:
     def __init__(self, return_typ, params, inherit):
@@ -27,6 +34,23 @@ class StaticChecker(Visitor):
 
     def check(self):
         return self.visitProgram(self.ast, [{}])
+
+    def handle_block(self, case, ctx, o, params=None):
+        local_o = [{}] + o
+        stmtlist = self.visit(ctx, local_o)
+        con_br = self.check_continue_break(stmtlist)
+        if case in ['IF'] and con_br:
+            raise MustInLoop(con_br)
+        o = local_o[1:]
+        return stmtlist
+
+    def check_continue_break(self, liststmt):
+        for stmt in liststmt:
+            if type(stmt) is BreakStmt:
+                return stmt
+            if type(stmt) is ContinueStmt:
+                return stmt
+        return None
 
     def visitIntegerType(self, ctx, o): pass
     def visitFloatType(self, ctx, o): pass
@@ -51,7 +75,6 @@ class StaticChecker(Visitor):
                 return FloatType()
 
         elif ctx.op == '%':
-            print(rtyp, ltyp)
             if type(rtyp) is IntegerType and type(ltyp) is IntegerType:
                 return IntegerType()
 
@@ -179,11 +202,18 @@ class StaticChecker(Visitor):
 
     def visitBlockStmt(self, ctx, o):
         # inherit NOT DONE
-        local_o = [{}] + o
-        [self.visit(x, local_o) for x in ctx.body]
-        o = local_o[1:]
+        [self.visit(x, o) for x in ctx.body]
+        return ctx.body
 
-    def visitIfStmt(self, ctx, o): pass
+    def visitIfStmt(self, ctx, o):
+        cond_typ = self.visit(ctx.cond, o)
+        if type(cond_typ) is not BooleanType:
+            raise TypeMismatchInStatement(ctx)
+        if type(ctx.tstmt) is BlockStmt:
+            self.handle_block('IF', ctx.tstmt, o)
+        if type(ctx.fstmt) is BlockStmt:
+            self.handle_block('IF', ctx.fstmt, o)
+
     def visitForStmt(self, ctx, o): pass
     def visitWhileStmt(self, ctx, o): pass
     def visitDoWhileStmt(self, ctx, o): pass
@@ -226,16 +256,14 @@ class StaticChecker(Visitor):
         return ctx.typ
 
     def visitFuncDecl(self, ctx, o):
-        local_o = [{}] + o
-        params = [self.visit(decl, local_o) for decl in ctx.params]
-        # inherit NOT CHECKED
-        # auto return NOT CHECKED
-        # check body
-        self.visit(ctx.body, local_o)
         # check name
         if Utils.lookup(ctx.name, o):
             raise Redeclared(Function(), ctx.name)
-        # update o
+        # inherit NOT CHECKED
+        # auto return NOT CHECKED
+        local_o = [{}] + o
+        params = [self.visit(decl, local_o) for decl in ctx.params]
+        self.visit(ctx.body, local_o)
         o = local_o[1:]
         o[0][ctx.name] = FunctionType(ctx.return_type, params, ctx.inherit)
 
@@ -248,7 +276,7 @@ class StaticChecker(Visitor):
         if not entry_point:
             raise NoEntryPoint()
         [self.visit(decl, o) for decl in ctx.decls]
-        return ''
+        return [str(ctx)]
 
 # Notes:
 # Functions inherit and invoke can be declared after its use (not done)

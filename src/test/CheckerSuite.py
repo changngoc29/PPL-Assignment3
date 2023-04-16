@@ -194,3 +194,52 @@ class CheckerSuite(unittest.TestCase):
         main: function void () {}"""
         expect = "Type mismatch in statement: AssignStmt(Id(arr), IntegerLit(30))"
         self.assertTrue(TestChecker.test(input, expect, 424))
+
+    def test25(self):
+        input = """a: float = 3.0;
+        arr: array [2] of integer = {1,2};
+        autoFunc: function auto () {}
+        test: function integer (c: integer, d: integer) {
+            a: auto = arr[0];
+            a = autoFunc;
+        }
+        b: float = autoFunc;
+        main: function void () {}"""
+        expect = "Type mismatch in Variable Declaration: VarDecl(b, FloatType, Id(autoFunc))"
+        self.assertTrue(TestChecker.test(input, expect, 425))
+
+    def test26(self):
+        input = """a: boolean = true;
+        main: function void () {
+            if (a + 1) {}
+        }"""
+        expect = "Type mismatch in expression: BinExpr(+, Id(a), IntegerLit(1))"
+        self.assertTrue(TestChecker.test(input, expect, 426))
+
+    def test27(self):
+        input = """a: boolean = true;
+        main: function void () {
+            if ("string" :: "string") {}
+        }"""
+        expect = "Type mismatch in statement: IfStmt(BinExpr(::, StringLit(string), StringLit(string)), BlockStmt([]))"
+        self.assertTrue(TestChecker.test(input, expect, 427))
+
+    def test28(self):
+        input = """a: boolean = true;
+        main: function void () {
+            if (a) {
+                break;
+            }
+        }"""
+        expect = "Must in loop: BreakStmt()"
+        self.assertTrue(TestChecker.test(input, expect, 428))
+
+    def test29(self):
+        input = """a: boolean = true;
+        main: function void () {
+            if (a) {
+                continue;
+            }
+        }"""
+        expect = "Must in loop: ContinueStmt()"
+        self.assertTrue(TestChecker.test(input, expect, 429))

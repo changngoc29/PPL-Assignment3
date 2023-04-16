@@ -1,0 +1,6 @@
+a: boolean = true;
+        main: function void () {
+            if (a) {
+                break;
+            }
+        }
