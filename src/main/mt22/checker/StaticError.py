@@ -66,7 +66,7 @@ class TypeMismatchInExpression(StaticError):
         self.expr = expr
 
     def __str__(self):
-        return f"Type mismatch in expression: {str(self.expr)}"
+        return "Type mismatch in expression: {}".format(str(self.expr) if self.expr else "")
 
 
 class TypeMismatchInStatement(StaticError):
