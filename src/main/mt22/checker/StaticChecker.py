@@ -199,6 +199,7 @@ class StaticChecker(Visitor):
                 rtyp.return_typ = ltyp
             elif type(rtyp.return_typ) is not type(ltyp):
                 raise TypeMismatchInStatement(ctx)
+        return ltyp
 
     def visitBlockStmt(self, ctx, o):
         # inherit NOT DONE
@@ -214,7 +215,15 @@ class StaticChecker(Visitor):
         if type(ctx.fstmt) is BlockStmt:
             self.handle_block('IF', ctx.fstmt, o)
 
-    def visitForStmt(self, ctx, o): pass
+    def visitForStmt(self, ctx, o):
+        init_typ = self.visit(ctx.init, o)
+        cond_typ = self.visit(ctx.cond, o)
+        upd_typ = self.visit(ctx.upd, o)
+        if type(init_typ) is not IntegerType or type(cond_typ) is not BooleanType or type(upd_typ) is not IntegerType:
+            raise TypeMismatchInStatement(ctx)
+        if type(ctx.stmt) is BlockStmt:
+            self.handle_block('FOR', ctx.stmt, o)
+
     def visitWhileStmt(self, ctx, o): pass
     def visitDoWhileStmt(self, ctx, o): pass
     def visitBreakStmt(self, ctx, o): return BreakStmt()
@@ -282,5 +291,5 @@ class StaticChecker(Visitor):
 # Functions inherit and invoke can be declared after its use (not done)
 # Check inherit of function and handle inherit parameter (not done)
 # When use a function as a variable -> type mismatch or undeclared ???
-# auto function inference (not done)
+# auto function inference (done)
 # inherit function first stmt (not done) ?

@@ -1,0 +1,7 @@
+a: boolean = true;
+        main: function void () {
+            i: boolean;
+            a: integer;
+            for (a=1, a < 2, 5) {}
+            g: auto;
+        }

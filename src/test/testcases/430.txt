@@ -1,0 +1,5 @@
+a: boolean = true;
+        main: function void () {
+            i: boolean;
+            for (i=true, i && false, 5) {}
+        }

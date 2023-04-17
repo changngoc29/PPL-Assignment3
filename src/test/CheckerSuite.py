@@ -243,3 +243,43 @@ class CheckerSuite(unittest.TestCase):
         }"""
         expect = "Must in loop: ContinueStmt()"
         self.assertTrue(TestChecker.test(input, expect, 429))
+
+    def test30(self):
+        input = """a: boolean = true;
+        main: function void () {
+            i: boolean;
+            for (i=true, i && false, 5) {}
+        }"""
+        expect = "Type mismatch in statement: ForStmt(AssignStmt(Id(i), BooleanLit(True)), BinExpr(&&, Id(i), BooleanLit(False)), IntegerLit(5), BlockStmt([]))"
+        self.assertTrue(TestChecker.test(input, expect, 430))
+
+    def test31(self):
+        input = """a: boolean = true;
+        main: function void () {
+            i: boolean;
+            a: integer;
+            for (a=1, a + 2, 5) {}
+        }"""
+        expect = "Type mismatch in statement: ForStmt(AssignStmt(Id(a), IntegerLit(1)), BinExpr(+, Id(a), IntegerLit(2)), IntegerLit(5), BlockStmt([]))"
+        self.assertTrue(TestChecker.test(input, expect, 431))
+
+    def test32(self):
+        input = """a: boolean = true;
+        main: function void () {
+            i: boolean;
+            a: integer;
+            for (a=1, a < 2, "string") {}
+        }"""
+        expect = "Type mismatch in statement: ForStmt(AssignStmt(Id(a), IntegerLit(1)), BinExpr(<, Id(a), IntegerLit(2)), StringLit(string), BlockStmt([]))"
+        self.assertTrue(TestChecker.test(input, expect, 432))
+
+    def test33(self):
+        input = """a: boolean = true;
+        main: function void () {
+            i: boolean;
+            a: integer;
+            for (a=1, a < 2, 5) {}
+            g: auto;
+        }"""
+        expect = "Invalid Variable: g"
+        self.assertTrue(TestChecker.test(input, expect, 433))
