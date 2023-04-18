@@ -12,10 +12,10 @@ class Utils:
 
     def show_dict(o):
         for scope in o:
-            print('<<<')
+            print("<<<")
             for key, value in scope.items():
                 print(key, value)
-            print('>>>')
+            print(">>>")
 
 
 class FunctionType:
@@ -25,7 +25,9 @@ class FunctionType:
         self.inherit = inherit
 
     def __str__(self):
-        return "FunctionType({}, {}, {})".format(str(self.return_typ), str(self.params), str(self.inherit))
+        return "FunctionType({}, {}, {})".format(
+            str(self.return_typ), str(self.params), str(self.inherit)
+        )
 
 
 class StaticChecker(Visitor):
@@ -39,7 +41,7 @@ class StaticChecker(Visitor):
         local_o = [{}] + o
         stmtlist = self.visit(ctx, local_o)
         con_br = self.check_continue_break(stmtlist)
-        if case in ['IF'] and con_br:
+        if case in ["IF"] and con_br:
             raise MustInLoop(con_br)
         o = local_o[1:]
         return stmtlist
@@ -52,19 +54,32 @@ class StaticChecker(Visitor):
                 return stmt
         return None
 
-    def visitIntegerType(self, ctx, o): pass
-    def visitFloatType(self, ctx, o): pass
-    def visitBooleanType(self, ctx, o): pass
-    def visitStringType(self, ctx, o): pass
-    def visitArrayType(self, ctx, o): pass
-    def visitAutoType(self, ctx, o): pass
-    def visitVoidType(self, ctx, o): pass
+    def visitIntegerType(self, ctx, o):
+        pass
+
+    def visitFloatType(self, ctx, o):
+        pass
+
+    def visitBooleanType(self, ctx, o):
+        pass
+
+    def visitStringType(self, ctx, o):
+        pass
+
+    def visitArrayType(self, ctx, o):
+        pass
+
+    def visitAutoType(self, ctx, o):
+        pass
+
+    def visitVoidType(self, ctx, o):
+        pass
 
     def visitBinExpr(self, ctx, o):
         rtyp = self.visit(ctx.right, o)
         ltyp = self.visit(ctx.left, o)
 
-        if ctx.op in ['+', '-', '*', '/']:
+        if ctx.op in ["+", "-", "*", "/"]:
             if type(rtyp) is IntegerType and type(ltyp) is IntegerType:
                 return IntegerType()
             elif type(rtyp) is IntegerType and type(ltyp) is FloatType:
@@ -74,34 +89,38 @@ class StaticChecker(Visitor):
             elif type(rtyp) is FloatType and type(ltyp) is FloatType:
                 return FloatType()
 
-        elif ctx.op == '%':
+        elif ctx.op == "%":
             if type(rtyp) is IntegerType and type(ltyp) is IntegerType:
                 return IntegerType()
 
-        elif ctx.op in ['||', '&&']:
+        elif ctx.op in ["||", "&&"]:
             if type(rtyp) is BooleanType and type(ltyp) is BooleanType:
                 return BooleanType()
 
-        elif ctx.op == '::':
+        elif ctx.op == "::":
             if type(rtyp) is StringType and type(ltyp) is StringType:
                 return StringType()
 
-        elif ctx.op in ['==', '!=']:
-            if (type(rtyp) is BooleanType and type(ltyp) is BooleanType) or (type(rtyp) is IntType and type(ltyp) is IntType):
+        elif ctx.op in ["==", "!="]:
+            if (type(rtyp) is BooleanType and type(ltyp) is BooleanType) or (
+                type(rtyp) is IntType and type(ltyp) is IntType
+            ):
                 return BooleanType()
 
-        elif ctx.op in ['<', '>', '<=', '>=']:
-            if (type(rtyp) is FloatType or type(rtyp) is IntegerType) and (type(ltyp) is FloatType or type(ltyp) is IntegerType):
+        elif ctx.op in ["<", ">", "<=", ">="]:
+            if (type(rtyp) is FloatType or type(rtyp) is IntegerType) and (
+                type(ltyp) is FloatType or type(ltyp) is IntegerType
+            ):
                 return BooleanType()
         raise TypeMismatchInExpression(ctx)
 
     def visitUnExpr(self, ctx, o):
         typ = self.visit(ctx.val, o)
-        if ctx.op == '-':
+        if ctx.op == "-":
             if type(typ) is IntegerType or type(typ) is FloatType:
                 return typ
 
-        elif ctx.op == '!':
+        elif ctx.op == "!":
             if type(typ) is BooleanType:
                 return typ
 
@@ -138,12 +157,19 @@ class StaticChecker(Visitor):
             return typ.typ
         # return type: ArrayType
         if len(ctx.cell) < len(typ.dimensions):
-            return ArrayType(typ.dimensions[len(ctx.cell):], typ.typ)
+            return ArrayType(typ.dimensions[len(ctx.cell) :], typ.typ)
 
-    def visitIntegerLit(self, ctx, o): return IntegerType()
-    def visitFloatLit(self, ctx, o): return FloatType()
-    def visitStringLit(self, ctx, o): return StringType()
-    def visitBooleanLit(self, ctx, o): return BooleanType()
+    def visitIntegerLit(self, ctx, o):
+        return IntegerType()
+
+    def visitFloatLit(self, ctx, o):
+        return FloatType()
+
+    def visitStringLit(self, ctx, o):
+        return StringType()
+
+    def visitBooleanLit(self, ctx, o):
+        return BooleanType()
 
     def visitArrayLit(self, ctx, o):
         dimensions = [len(ctx.explist)]
@@ -160,7 +186,9 @@ class StaticChecker(Visitor):
             # check with ArrayType
             if type(root_typ) is ArrayType:
                 # check typ and len of ArrayType
-                if type(root_typ.typ) is not type(exp_typ.typ) or len(root_typ.dimensions) != len(exp_typ.dimensions):
+                if type(root_typ.typ) is not type(exp_typ.typ) or len(
+                    root_typ.dimensions
+                ) != len(exp_typ.dimensions):
                     raise IllegalArrayLiteral(ctx)
                 # check num of element in ArrayType
                 for i in range(len(root_typ.dimensions)):
@@ -211,25 +239,44 @@ class StaticChecker(Visitor):
         if type(cond_typ) is not BooleanType:
             raise TypeMismatchInStatement(ctx)
         if type(ctx.tstmt) is BlockStmt:
-            self.handle_block('IF', ctx.tstmt, o)
+            self.handle_block("IF", ctx.tstmt, o)
         if type(ctx.fstmt) is BlockStmt:
-            self.handle_block('IF', ctx.fstmt, o)
+            self.handle_block("IF", ctx.fstmt, o)
 
     def visitForStmt(self, ctx, o):
         init_typ = self.visit(ctx.init, o)
         cond_typ = self.visit(ctx.cond, o)
         upd_typ = self.visit(ctx.upd, o)
-        if type(init_typ) is not IntegerType or type(cond_typ) is not BooleanType or type(upd_typ) is not IntegerType:
+        if (
+            type(init_typ) is not IntegerType
+            or type(cond_typ) is not BooleanType
+            or type(upd_typ) is not IntegerType
+        ):
             raise TypeMismatchInStatement(ctx)
         if type(ctx.stmt) is BlockStmt:
-            self.handle_block('FOR', ctx.stmt, o)
+            self.handle_block("FOR", ctx.stmt, o)
 
-    def visitWhileStmt(self, ctx, o): pass
-    def visitDoWhileStmt(self, ctx, o): pass
-    def visitBreakStmt(self, ctx, o): return BreakStmt()
-    def visitContinueStmt(self, ctx, o): return ContinueStmt()
-    def visitReturnStmt(self, ctx, o): pass
-    def visitCallStmt(self, ctx, o): pass
+    def visitWhileStmt(self, ctx, o):
+        cond_typ = self.visit(ctx.cond, o)
+        if type(cond_typ) is not Boolean:
+            raise TypeMismatchInStatement(ctx)
+        if type(ctx.stmt) is BlockStmt:
+            self.handle_block("WHILE", ctx.stmt, o)
+
+    def visitDoWhileStmt(self, ctx, o):
+        pass
+
+    def visitBreakStmt(self, ctx, o):
+        return BreakStmt()
+
+    def visitContinueStmt(self, ctx, o):
+        return ContinueStmt()
+
+    def visitReturnStmt(self, ctx, o):
+        pass
+
+    def visitCallStmt(self, ctx, o):
+        pass
 
     def visitVarDecl(self, ctx, o):
         if ctx.name in o[0]:
@@ -247,7 +294,9 @@ class StaticChecker(Visitor):
             # check for case ArrayType
             elif type(init_typ) is ArrayType:
                 # check type + length of ctx array and init array
-                if type(ctx.typ.typ) is not type(init_typ.typ) or len(ctx.typ.dimensions) != len(init_typ.dimensions):
+                if type(ctx.typ.typ) is not type(init_typ.typ) or len(
+                    ctx.typ.dimensions
+                ) != len(init_typ.dimensions):
                     raise TypeMismatchInVarDecl(ctx)
                 # check dimensions between init and ctx
                 for i in range(len(ctx.typ.dimensions)):
@@ -280,12 +329,18 @@ class StaticChecker(Visitor):
         entry_point = False
         for decl in ctx.decls:
             # check if main() existed
-            if (type(decl) is FuncDecl) and (decl.name == 'main') and (type(decl.return_type) is VoidType) and (len(decl.params) == 0):
+            if (
+                (type(decl) is FuncDecl)
+                and (decl.name == "main")
+                and (type(decl.return_type) is VoidType)
+                and (len(decl.params) == 0)
+            ):
                 entry_point = True
         if not entry_point:
             raise NoEntryPoint()
         [self.visit(decl, o) for decl in ctx.decls]
         return [str(ctx)]
+
 
 # Notes:
 # Functions inherit and invoke can be declared after its use (not done)
