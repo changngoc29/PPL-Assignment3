@@ -5,5 +5,5 @@ a: float = 3.0;
             a: auto = arr[0];
             a = autoFunc;
         }
-        b: float = autoFunc;
+        b: string = autoFunc;
         main: function void () {}

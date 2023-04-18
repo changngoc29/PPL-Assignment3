@@ -1,0 +1,6 @@
+a: boolean = true;
+        voidfunc: function void (a: integer, b: integer) {
+            a: integer;
+        }
+        main: function void () {}
+        

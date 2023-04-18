@@ -74,7 +74,9 @@ class CheckerSuite(unittest.TestCase):
         g: boolean = 1 < 3.0;
         q: boolean = true && 1;
         main: function void () {}"""
-        expect = "Type mismatch in expression: BinExpr(&&, BooleanLit(True), IntegerLit(1))"
+        expect = (
+            "Type mismatch in expression: BinExpr(&&, BooleanLit(True), IntegerLit(1))"
+        )
         self.assertTrue(TestChecker.test(input, expect, 409))
 
     def test10(self):
@@ -116,7 +118,9 @@ class CheckerSuite(unittest.TestCase):
         input = """a: array [2] of integer = {1, 2};
         b: integer = a[1, 2];
         main: function void () {}"""
-        expect = "Type mismatch in expression: ArrayCell(a, [IntegerLit(1), IntegerLit(2)])"
+        expect = (
+            "Type mismatch in expression: ArrayCell(a, [IntegerLit(1), IntegerLit(2)])"
+        )
         self.assertTrue(TestChecker.test(input, expect, 415))
 
     def test16(self):
@@ -129,16 +133,18 @@ class CheckerSuite(unittest.TestCase):
     def test17(self):
         input = """a: array [2] of integer = {1, 2};
         b: float = a[1];
+        g: auto;
         main: function void () {}"""
-        expect = "Type mismatch in Variable Declaration: VarDecl(b, FloatType, ArrayCell(a, [IntegerLit(1)]))"
+        expect = "Invalid Variable: g"
         self.assertTrue(TestChecker.test(input, expect, 417))
 
     def test18(self):
         input = """a: array [2, 2, 1] of integer = {{{1},{3}}, {{1},{4}}};
         c: array [2, 1] of integer = a[0];
-        b: float = a[1];
+        b: float = a[1,2,1];
+        c: auto = 4;
         main: function void () {}"""
-        expect = "Type mismatch in Variable Declaration: VarDecl(b, FloatType, ArrayCell(a, [IntegerLit(1)]))"
+        expect = "Redeclared Variable: c"
         self.assertTrue(TestChecker.test(input, expect, 418))
 
     def test19(self):
@@ -203,9 +209,9 @@ class CheckerSuite(unittest.TestCase):
             a: auto = arr[0];
             a = autoFunc;
         }
-        b: float = autoFunc;
+        b: string = autoFunc;
         main: function void () {}"""
-        expect = "Type mismatch in Variable Declaration: VarDecl(b, FloatType, Id(autoFunc))"
+        expect = "Type mismatch in Variable Declaration: VarDecl(b, StringType, Id(autoFunc))"
         self.assertTrue(TestChecker.test(input, expect, 425))
 
     def test26(self):
@@ -283,3 +289,128 @@ class CheckerSuite(unittest.TestCase):
         }"""
         expect = "Invalid Variable: g"
         self.assertTrue(TestChecker.test(input, expect, 433))
+
+    def test34(self):
+        input = """a: boolean = true;
+        main: function void () {
+            i: boolean;
+            a: integer = 4;
+            while (a + 4) {}
+            g: auto;
+        }"""
+        expect = "Type mismatch in statement: WhileStmt(BinExpr(+, Id(a), IntegerLit(4)), BlockStmt([]))"
+        self.assertTrue(TestChecker.test(input, expect, 434))
+
+    def test35(self):
+        input = """a: boolean = true;
+        main: function void () {
+            i: boolean;
+            a: integer = 4;
+            while (a == 4) {}
+            g: auto;
+        }"""
+        expect = "Invalid Variable: g"
+        self.assertTrue(TestChecker.test(input, expect, 435))
+
+    def test36(self):
+        input = """a: boolean = true;
+        main: function void () {
+            i: boolean;
+            a: integer = 4;
+            do {} while (a>4);
+            do {} while (a+4);
+            g: auto;
+        }"""
+        expect = "Type mismatch in statement: DoWhileStmt(BinExpr(+, Id(a), IntegerLit(4)), BlockStmt([]))"
+        self.assertTrue(TestChecker.test(input, expect, 436))
+
+    def test37(self):
+        input = """a: boolean = true;
+        voidfunc: function void (a: integer, b: integer) {}
+        main: function void () {
+            i: boolean;
+            a: integer = 4;
+            do {} while (a>4);
+            voidfunc(a, 4);
+            voidfunc(a, b);
+        }"""
+        expect = "Undeclared Identifier: b"
+        self.assertTrue(TestChecker.test(input, expect, 437))
+
+    def test38(self):
+        input = """a: boolean = true;
+        voidfunc: function void (a: integer, b: integer) {
+            a: integer;
+        }
+        main: function void () {}
+        """
+        expect = "Redeclared Variable: a"
+        self.assertTrue(TestChecker.test(input, expect, 438))
+
+    def test39(self):
+        input = """a: boolean = true;
+        voidfunc: function void (c: integer, b: integer) {
+            a: integer = 5;
+            c = a;
+            b = "string";
+        }
+        main: function void () {}
+        """
+        expect = "Type mismatch in statement: AssignStmt(Id(b), StringLit(string))"
+        self.assertTrue(TestChecker.test(input, expect, 439))
+
+    def test40(self):
+        input = """a: boolean = true;
+        voidfunc: function void (c: integer, b: integer) {
+            a: integer = 5;
+            c = a;
+            for (a=5, a<4, a+2) {
+                if (a!=4) a = 4;
+                else {
+                    a = 4;
+                    break;
+                }
+            }
+            continue;
+        }
+        main: function void () {}
+        """
+        expect = "Must in loop: ContinueStmt()"
+        self.assertTrue(TestChecker.test(input, expect, 440))
+
+    def test41(self):
+        input = """a: boolean = true;
+        test: function auto () {}
+        main: function void () {
+            a: integer = 4;
+            c: string;
+            a = test;
+        }
+        c: string = test;
+        """
+        expect = (
+            "Type mismatch in Variable Declaration: VarDecl(c, StringType, Id(test))"
+        )
+        self.assertTrue(TestChecker.test(input, expect, 441))
+
+    def test42(self):
+        input = """a: boolean = true;
+        test: function auto () {}
+        main: function void () {
+            a: integer = 4;
+            c: string;
+            if (true) {
+                for (a=4, a<5, a+4) {
+                    c: integer = 4;
+                    c = test;
+                    if (c>a) break;
+                    d: float = 3.0;
+                    d = test;
+                    d = c;
+                }
+            }
+            break;
+        }
+        """
+        expect = "Must in loop: BreakStmt()"
+        self.assertTrue(TestChecker.test(input, expect, 442))

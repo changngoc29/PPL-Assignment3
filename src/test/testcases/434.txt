@@ -1,0 +1,7 @@
+a: boolean = true;
+        main: function void () {
+            i: boolean;
+            a: integer = 4;
+            while (a + 4) {}
+            g: auto;
+        }

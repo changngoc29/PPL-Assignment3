@@ -1,0 +1,9 @@
+a: boolean = true;
+        voidfunc: function void (a: integer, b: integer) {}
+        main: function void () {
+            i: boolean;
+            a: integer = 4;
+            do {} while (a>4);
+            voidfunc(a, 4);
+            voidfunc(a, b);
+        }

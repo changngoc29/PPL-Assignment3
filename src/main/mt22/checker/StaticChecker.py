@@ -11,11 +11,13 @@ class Utils:
         return None
 
     def show_dict(o):
+        print("--------------------Start")
         for scope in o:
             print("<<<")
             for key, value in scope.items():
                 print(key, value)
             print(">>>")
+        print("--------------------End")
 
 
 class FunctionType:
@@ -31,17 +33,22 @@ class FunctionType:
 
 
 class StaticChecker(Visitor):
+    is_in_loop = False
+
     def __init__(self, ast):
         self.ast = ast
 
     def check(self):
         return self.visitProgram(self.ast, [{}])
 
-    def handle_block(self, case, ctx, o, params=None):
-        local_o = [{}] + o
+    def handle_block(self, ctx, o, dict_params=None):
+        if dict_params:
+            local_o = dict_params + o
+        else:
+            local_o = [{}] + o
         stmtlist = self.visit(ctx, local_o)
         con_br = self.check_continue_break(stmtlist)
-        if case in ["IF"] and con_br:
+        if not StaticChecker.is_in_loop and con_br:
             raise MustInLoop(con_br)
         o = local_o[1:]
         return stmtlist
@@ -103,7 +110,7 @@ class StaticChecker(Visitor):
 
         elif ctx.op in ["==", "!="]:
             if (type(rtyp) is BooleanType and type(ltyp) is BooleanType) or (
-                type(rtyp) is IntType and type(ltyp) is IntType
+                type(rtyp) is IntegerType and type(ltyp) is IntegerType
             ):
                 return BooleanType()
 
@@ -221,12 +228,17 @@ class StaticChecker(Visitor):
 
         if type(rtyp) is not FunctionType:
             if type(rtyp) is not type(ltyp):
-                raise TypeMismatchInStatement(ctx)
+                if type(ltyp) is not FloatType or type(rtyp) is not IntegerType:
+                    raise TypeMismatchInStatement(ctx)
         else:
             if type(rtyp.return_typ) is AutoType:
                 rtyp.return_typ = ltyp
             elif type(rtyp.return_typ) is not type(ltyp):
-                raise TypeMismatchInStatement(ctx)
+                if (
+                    type(ltyp) is not FloatType
+                    or type(rtyp.return_typ) is not IntegerType
+                ):
+                    raise TypeMismatchInStatement(ctx)
         return ltyp
 
     def visitBlockStmt(self, ctx, o):
@@ -239,9 +251,9 @@ class StaticChecker(Visitor):
         if type(cond_typ) is not BooleanType:
             raise TypeMismatchInStatement(ctx)
         if type(ctx.tstmt) is BlockStmt:
-            self.handle_block("IF", ctx.tstmt, o)
+            self.handle_block(ctx.tstmt, o)
         if type(ctx.fstmt) is BlockStmt:
-            self.handle_block("IF", ctx.fstmt, o)
+            self.handle_block(ctx.fstmt, o)
 
     def visitForStmt(self, ctx, o):
         init_typ = self.visit(ctx.init, o)
@@ -254,17 +266,26 @@ class StaticChecker(Visitor):
         ):
             raise TypeMismatchInStatement(ctx)
         if type(ctx.stmt) is BlockStmt:
-            self.handle_block("FOR", ctx.stmt, o)
+            StaticChecker.is_in_loop = True
+            self.handle_block(ctx.stmt, o)
+            StaticChecker.is_in_loop = False
 
     def visitWhileStmt(self, ctx, o):
         cond_typ = self.visit(ctx.cond, o)
-        if type(cond_typ) is not Boolean:
+        if type(cond_typ) is not BooleanType:
             raise TypeMismatchInStatement(ctx)
         if type(ctx.stmt) is BlockStmt:
-            self.handle_block("WHILE", ctx.stmt, o)
+            StaticChecker.is_in_loop = True
+            self.handle_block(ctx.stmt, o)
+            StaticChecker.is_in_loop = False
 
     def visitDoWhileStmt(self, ctx, o):
-        pass
+        cond_typ = self.visit(ctx.cond, o)
+        if type(cond_typ) is not BooleanType:
+            raise TypeMismatchInStatement(ctx)
+        StaticChecker.is_in_loop = True
+        self.handle_block(ctx.stmt, o)
+        StaticChecker.is_in_loop = False
 
     def visitBreakStmt(self, ctx, o):
         return BreakStmt()
@@ -273,10 +294,20 @@ class StaticChecker(Visitor):
         return ContinueStmt()
 
     def visitReturnStmt(self, ctx, o):
-        pass
+        return_typ = self.visit(ctx.expr, o)
+        return return_typ
 
     def visitCallStmt(self, ctx, o):
-        pass
+        typ = Utils.lookup(ctx.name, o)
+        if type(typ) is not FunctionType:
+            raise Undeclared(Function(), ctx.name)
+        args = [self.visit(arg, o) for arg in ctx.args]
+        if len(args) != len(typ.params):
+            raise TypeMismatchInExpression(ctx)
+        for i in range(len(args)):
+            if type(args[i]) is not type(typ.params[i]):
+                raise TypeMismatchInExpression(ctx)
+        return typ.return_typ
 
     def visitVarDecl(self, ctx, o):
         if ctx.name in o[0]:
@@ -290,7 +321,8 @@ class StaticChecker(Visitor):
                 ctx.typ = init_typ
             # check type between ctx and init
             elif type(init_typ) is not type(ctx.typ):
-                raise TypeMismatchInVarDecl(ctx)
+                if type(ctx.typ) is not FloatType or type(init_typ) is not IntegerType:
+                    raise TypeMismatchInVarDecl(ctx)
             # check for case ArrayType
             elif type(init_typ) is ArrayType:
                 # check type + length of ctx array and init array
@@ -318,11 +350,9 @@ class StaticChecker(Visitor):
         if Utils.lookup(ctx.name, o):
             raise Redeclared(Function(), ctx.name)
         # inherit NOT CHECKED
-        # auto return NOT CHECKED
-        local_o = [{}] + o
-        params = [self.visit(decl, local_o) for decl in ctx.params]
-        self.visit(ctx.body, local_o)
-        o = local_o[1:]
+        dict = [{}]
+        params = [self.visit(decl, dict) for decl in ctx.params]
+        self.handle_block(ctx.body, o, dict)
         o[0][ctx.name] = FunctionType(ctx.return_type, params, ctx.inherit)
 
     def visitProgram(self, ctx, o):
@@ -345,6 +375,6 @@ class StaticChecker(Visitor):
 # Notes:
 # Functions inherit and invoke can be declared after its use (not done)
 # Check inherit of function and handle inherit parameter (not done)
+# inherit function first stmt (not done) ?
 # When use a function as a variable -> type mismatch or undeclared ???
 # auto function inference (done)
-# inherit function first stmt (not done) ?

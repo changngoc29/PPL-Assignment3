@@ -1,0 +1,18 @@
+a: boolean = true;
+        test: function auto () {}
+        main: function void () {
+            a: integer = 4;
+            c: string;
+            if (true) {
+                for (a=4, a<5, a+4) {
+                    c: integer = 4;
+                    c = test;
+                    if (c>a) break;
+                    d: float = 3.0;
+                    d = test;
+                    d = c;
+                }
+            }
+            break;
+        }
+        

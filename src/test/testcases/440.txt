@@ -1,0 +1,15 @@
+a: boolean = true;
+        voidfunc: function void (c: integer, b: integer) {
+            a: integer = 5;
+            c = a;
+            for (a=5, a<4, a+2) {
+                if (a!=4) a = 4;
+                else {
+                    a = 4;
+                    break;
+                }
+            }
+            continue;
+        }
+        main: function void () {}
+        
