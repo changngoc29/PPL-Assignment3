@@ -1,6 +1,9 @@
-a: boolean = true;
-        func0: function void (inherit a: integer, inherit b: integer) {} 
-        func1: function auto (a: integer, c: integer) inherit func0 {
+a: array [2, 2, 1] of auto = {{{1},{2.5}}, {{--(1+2)},{-4}}};
+        test: function auto (a: auto, b: integer) {}
+        main: function void () {
+            d: integer = test(a[0,0,0], 5);
+            c: auto = !(d < -5);
+            if (c) {
+                a: boolean = test(5, 0);
+            }
         }
-        main: function void () {}
-        

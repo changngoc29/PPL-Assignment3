@@ -11,5 +11,6 @@ a: boolean = true;
                 }
             }
             z: integer = test(false, 5);
+            z: boolean = true;
         }
         

@@ -83,8 +83,6 @@ class StaticChecker(Visitor):
                             args_typs = [
                                 self.visit(arg, local_o) for arg in first_stmt.args
                             ]
-                            print(args_typs)
-                            print(inherited.params)
                             if len(args_typs) != len(inherited.params):
                                 raise InvalidStatementInFunction(func_name)
                             for i in range(len(args_typs)):
@@ -227,22 +225,36 @@ class StaticChecker(Visitor):
 
     def visitArrayLit(self, ctx, o):
         dimensions = [len(ctx.explist)]
-        # check for empty array (not need)
-        if len(ctx.explist) == 0:
-            return ArrayType([0], AutoType())
         root_typ = self.visit(ctx.explist[0], o)
+
+        float_int_infer = False
 
         for i in range(1, len(ctx.explist)):
             exp_typ = self.visit(ctx.explist[i], o)
             # check type in explist
             if type(root_typ) is not type(exp_typ):
-                raise IllegalArrayLiteral(ctx)
+                if (type(root_typ) is FloatType and type(exp_typ) is IntegerType) or (
+                    type(root_typ) is IntegerType and type(exp_typ) is FloatType
+                ):
+                    root_typ = FloatType()
+                else:
+                    raise IllegalArrayLiteral(ctx)
             # check with ArrayType
             if type(root_typ) is ArrayType:
                 # check typ and len of ArrayType
-                if type(root_typ.typ) is not type(exp_typ.typ) or len(
-                    root_typ.dimensions
-                ) != len(exp_typ.dimensions):
+                if type(root_typ.typ) is not type(exp_typ.typ):
+                    if (
+                        type(root_typ.typ) is IntegerType
+                        and type(exp_typ.typ) is FloatType
+                    ) or (
+                        type(root_typ.typ) is FloatType
+                        and type(exp_typ.typ) is IntegerType
+                    ):
+                        float_int_infer = True
+                    else:
+                        raise IllegalArrayLiteral(ctx)
+
+                if len(root_typ.dimensions) != len(exp_typ.dimensions):
                     raise IllegalArrayLiteral(ctx)
                 # check num of element in ArrayType
                 for i in range(len(root_typ.dimensions)):
@@ -251,6 +263,8 @@ class StaticChecker(Visitor):
         if type(root_typ) is ArrayType:
             dimensions += root_typ.dimensions
         return_typ = root_typ.typ if type(root_typ) is ArrayType else root_typ
+        if float_int_infer:
+            return_typ = FloatType()
         return ArrayType(dimensions, return_typ)
 
     def visitFuncCall(self, ctx, o):
@@ -263,8 +277,13 @@ class StaticChecker(Visitor):
         if len(args) != len(typ.params):
             raise TypeMismatchInExpression(ctx)
         for i in range(len(args)):
-            if type(args[i]) is not type(typ.params[i]):
-                raise TypeMismatchInExpression(ctx)
+            if type(typ.params[i]) is AutoType:
+                typ.params[i] = args[i]
+            elif type(args[i]) is not type(typ.params[i]):
+                if not (
+                    type(args[i]) is IntegerType and type(typ.params[i]) is FloatType
+                ):
+                    raise TypeMismatchInExpression(ctx)
         return typ.return_typ
 
     def visitAssignStmt(self, ctx, o):
@@ -368,16 +387,21 @@ class StaticChecker(Visitor):
             init_typ = self.visit(ctx.init, o)
             if type(ctx.typ) is AutoType:
                 ctx.typ = init_typ
+            elif type(init_typ) is AutoType:
+                Utils.lookup(ctx.init.name, o).return_typ = ctx.typ
             # check type between ctx and init
             elif type(init_typ) is not type(ctx.typ):
-                if type(ctx.typ) is not FloatType or type(init_typ) is not IntegerType:
+                if not (type(ctx.typ) is FloatType and type(init_typ) is IntegerType):
                     raise TypeMismatchInVarDecl(ctx)
             # check for case ArrayType
             elif type(init_typ) is ArrayType:
                 # check type + length of ctx array and init array
-                if type(ctx.typ.typ) is not type(init_typ.typ) or len(
-                    ctx.typ.dimensions
-                ) != len(init_typ.dimensions):
+                if type(ctx.typ.typ) is not type(init_typ.typ):
+                    if type(ctx.typ.typ) is AutoType:
+                        ctx.typ.typ = init_typ.typ
+                    else:
+                        raise TypeMismatchInVarDecl(ctx)
+                if len(ctx.typ.dimensions) != len(init_typ.dimensions):
                     raise TypeMismatchInVarDecl(ctx)
                 # check dimensions between init and ctx
                 for i in range(len(ctx.typ.dimensions)):
@@ -385,7 +409,7 @@ class StaticChecker(Visitor):
                         raise TypeMismatchInVarDecl(ctx)
         o[0][ctx.name] = ctx.typ
 
-    def visitParamDecl(self, ctx, o, inherit_params=None):
+    def visitParamDecl(self, ctx, o):
         pass
 
     def visitFuncDecl(self, ctx, o):

@@ -10,6 +10,6 @@ a: boolean = true;
                     if (c>a) break;
                 }
             }
-            test(12.3, 5);
+            b: boolean = test(false, 5);
         }
         

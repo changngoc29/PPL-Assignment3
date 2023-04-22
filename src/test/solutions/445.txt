@@ -1,1 +1,1 @@
-Type mismatch in expression: FuncCall(test, [BooleanLit(True), Id(a)])
+Type mismatch in Variable Declaration: VarDecl(b, BooleanType, FuncCall(test, [BooleanLit(False), IntegerLit(5)]))
