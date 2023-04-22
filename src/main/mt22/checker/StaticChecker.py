@@ -10,6 +10,21 @@ class Utils:
                 return scope[name]
         return None
 
+    def import_special_func():
+        special_dict = {
+            "readInteger": FunctionType(IntegerType(), [], None, {}, True),
+            "printInteger": FunctionType(VoidType(), [IntegerType()], None, {}, True),
+            "readFloat": FunctionType(FloatType(), [], None, {}, True),
+            "writeFloat": FunctionType(VoidType(), [FloatType()], None, {}, True),
+            "readBoolean": FunctionType(BooleanType(), [], None, {}, True),
+            "printBoolean": FunctionType(VoidType(), [BooleanType()], None, {}, True),
+            "readString": FunctionType(StringType(), [], None, {}, True),
+            "printString": FunctionType(VoidType(), [StringType()], None, {}, True),
+            "super": FunctionType(VoidType(), [], None, {}, True),
+            "preventDefault": FunctionType(VoidType(), [], None, {}, True),
+        }
+        return special_dict
+
     def show_dict(o):
         print("--------------------Start")
         for scope in o:
@@ -21,12 +36,14 @@ class Utils:
 
 
 class FunctionType:
-    def __init__(self, return_typ, params, inherit, inherit_params=None):
+    def __init__(
+        self, return_typ, params, inherit, inherit_params=None, is_declared=False
+    ):
         self.return_typ = return_typ
         self.params = params
         self.inherit = inherit
         self.inherit_params = inherit_params
-        self.is_declared = False
+        self.is_declared = is_declared
 
     def __str__(self):
         return "FunctionType({}, {}, {}, {})".format(
@@ -46,11 +63,34 @@ class StaticChecker(Visitor):
     def check(self):
         return self.visitProgram(self.ast, [{}])
 
-    def handle_block(self, ctx, o, dict_params=None):
-        if dict_params:
-            local_o = dict_params + o
+    def handle_block(self, ctx, o, param_dict=None, inherited=None, func_name=None):
+        if param_dict:
+            local_o = param_dict + o
         else:
             local_o = [{}] + o
+        if inherited:
+            if len(inherited.params) != 0:
+                if len(ctx.body) == 0:
+                    raise InvalidStatementInFunction(func_name)
+                else:
+                    first_stmt = ctx.body[0]
+                    if type(first_stmt) is not CallStmt:
+                        raise InvalidStatementInFunction(func_name)
+                    if type(first_stmt) is CallStmt and len(inherited.params) != 0:
+                        if first_stmt.name not in ["preventDefault", "super"]:
+                            raise InvalidStatementInFunction(func_name)
+                        if first_stmt.name == "super":
+                            args_typs = [
+                                self.visit(arg, local_o) for arg in first_stmt.args
+                            ]
+                            print(args_typs)
+                            print(inherited.params)
+                            if len(args_typs) != len(inherited.params):
+                                raise InvalidStatementInFunction(func_name)
+                            for i in range(len(args_typs)):
+                                if type(args_typs[i]) is not type(inherited.params[i]):
+                                    raise InvalidStatementInFunction(func_name)
+
         stmtlist = self.visit(ctx, local_o)
         con_br = self.check_continue_break(stmtlist)
         if not StaticChecker.is_in_loop and con_br:
@@ -309,6 +349,8 @@ class StaticChecker(Visitor):
         if type(typ) is not FunctionType:
             raise Undeclared(Function(), ctx.name)
         args = [self.visit(arg, o) for arg in ctx.args]
+        if ctx.name == "super":
+            return typ.return_typ
         if len(args) != len(typ.params):
             raise TypeMismatchInStatement(ctx)
         for i in range(len(args)):
@@ -353,24 +395,29 @@ class StaticChecker(Visitor):
 
         # inherit
         inherit_params = None
+        inherited = None
         if ctx.inherit:
             inherited = Utils.lookup(ctx.inherit, o)
             if not inherited:
                 raise Undeclared(Function(), ctx.inherit)
             inherit_params = inherited.inherit_params
         # check params
-        dict = [{}]
+        local_dict = [{}]
         for param in ctx.params:
             if inherit_params:
                 if param.name in inherit_params:
                     raise Invalid(Parameter(), param.name)
-            if param.name in dict[0]:
+            if param.name in local_dict[0]:
                 raise Redeclared(Parameter(), param.name)
-            dict[0][param.name] = param.typ
-        self.handle_block(ctx.body, o, dict)
+            local_dict[0][param.name] = param.typ
+        # merge inherit_params and local_dict
+        if inherit_params:
+            local_dict[0].update(inherit_params)
+        self.handle_block(ctx.body, o, local_dict, inherited, ctx.name)
         o[0][ctx.name].is_declared = True
 
     def visitProgram(self, ctx, o):
+        o.append(Utils.import_special_func())
         entry_point = False
         for decl in ctx.decls:
             # record func basically

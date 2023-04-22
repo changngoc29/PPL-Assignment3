@@ -475,11 +475,55 @@ class CheckerSuite(unittest.TestCase):
     #     )
     #     self.assertTrue(TestChecker.test(input, expect, 445))
 
-    def test46(self):
+    def test50(self):
         input = """a: boolean = true;
-        func0: function void (inherit a: integer, inherit b: integer) {} 
-        func1: function auto (a: integer, c: integer) inherit func0 {}
+        func0: function void (inherit a: integer, inherit b: integer) {}
+        func1: function auto (a: integer, c: integer) inherit func0 {
+        }
         main: function void () {}
         """
         expect = "Invalid Parameter: a"
-        self.assertTrue(TestChecker.test(input, expect, 446))
+        self.assertTrue(TestChecker.test(input, expect, 450))
+
+    def test51(self):
+        input = """a: boolean = true;
+        func0: function void (inherit a: integer, inherit b: integer) {}
+        func1: function auto (d: integer, c: integer) inherit func0 {
+            preventDefault();
+        }
+        main: function void () {
+            readInteger();
+            readFloat();
+            readBoolean();
+            readString();
+            printInteger(12);
+            printBoolean(true);
+            printString(12);
+        }
+        """
+        expect = "Type mismatch in statement: CallStmt(printString, IntegerLit(12))"
+        self.assertTrue(TestChecker.test(input, expect, 451))
+
+    def test52(self):
+        input = """a: boolean = true;
+        func1: function auto (d: integer, c: integer) inherit func0 {
+            preventDefault();
+            e: string = readFloat();
+        }
+        func0: function void (inherit a: integer, inherit b: integer) {}
+        main: function void () {}
+        """
+        expect = "Type mismatch in Variable Declaration: VarDecl(e, StringType, FuncCall(readFloat, []))"
+        self.assertTrue(TestChecker.test(input, expect, 452))
+
+    def test53(self):
+        input = """a: boolean = true;
+        func1: function auto (d: integer, c: integer) inherit func0 {
+            e: float = readFloat();
+            super(c, "string");
+        }
+        func0: function void (inherit a: integer, inherit b: integer) {}
+        main: function void () {}
+        """
+        expect = "Type mismatch in Variable Declaration: VarDecl(e, StringType, FuncCall(readFloat, []))"
+        self.assertTrue(TestChecker.test(input, expect, 453))

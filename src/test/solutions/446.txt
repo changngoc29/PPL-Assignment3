@@ -1,1 +1,1 @@
-Invalid Parameter: a
+['Program([\n\tVarDecl(a, BooleanType, BooleanLit(True))\n\tFuncDecl(func0, VoidType, [InheritParam(a, IntegerType), InheritParam(b, IntegerType)], None, BlockStmt([]))\n\tFuncDecl(func1, AutoType, [Param(d, IntegerType), Param(c, IntegerType)], func0, BlockStmt([CallStmt(preventDefault, )]))\n\tFuncDecl(main, VoidType, [], None, BlockStmt([]))\n])']

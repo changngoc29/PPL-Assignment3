@@ -1,0 +1,6 @@
+a: boolean = true;
+        func0: function void (inherit a: integer, inherit b: integer) {}
+        func1: function auto (a: integer, c: integer) inherit func0 {
+        }
+        main: function void () {}
+        

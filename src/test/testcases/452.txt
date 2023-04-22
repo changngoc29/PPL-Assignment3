@@ -1,7 +1,8 @@
 a: boolean = true;
-        func0: function void (inherit a: integer, inherit b: integer) {} 
         func1: function auto (d: integer, c: integer) inherit func0 {
             preventDefault();
+            e: string = readFloat();
         }
+        func0: function void (inherit a: integer, inherit b: integer) {}
         main: function void () {}
         

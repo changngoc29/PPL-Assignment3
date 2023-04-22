@@ -7,7 +7,7 @@ class AST(ABC):
         return self.__dict__ == other.__dict__
 
     def accept(self, v, param):
-        method_name = 'visit{}'.format(self.__class__.__name__)
+        method_name = "visit{}".format(self.__class__.__name__)
         visit = getattr(v, method_name)
         return visit(self, param)
 
@@ -26,6 +26,7 @@ class Type(AST):
 
 class Decl(AST):
     pass
+
 
 # Types
 
@@ -60,7 +61,9 @@ class ArrayType(Type):
         self.typ = typ
 
     def __str__(self):
-        return "ArrayType([{}], {})".format(", ".join([str(dimen) for dimen in self.dimensions]), str(self.typ))
+        return "ArrayType([{}], {})".format(
+            ", ".join([str(dimen) for dimen in self.dimensions]), str(self.typ)
+        )
 
 
 class AutoType(Type):
@@ -74,6 +77,7 @@ class VoidType(Type):
 
 
 # Expressions
+
 
 class LHS(Expr):
     pass
@@ -112,7 +116,9 @@ class ArrayCell(LHS):
         self.cell = cell
 
     def __str__(self):
-        return "ArrayCell({}, [{}])".format(self.name, ", ".join([str(expr) for expr in self.cell]))
+        return "ArrayCell({}, [{}])".format(
+            self.name, ", ".join([str(expr) for expr in self.cell])
+        )
 
 
 class IntegerLit(Expr):
@@ -161,10 +167,13 @@ class FuncCall(Expr):
         self.args = args
 
     def __str__(self):
-        return "FuncCall({}, [{}])".format(self.name, ", ".join([str(expr) for expr in self.args]))
+        return "FuncCall({}, [{}])".format(
+            self.name, ", ".join([str(expr) for expr in self.args])
+        )
 
 
 # Statements
+
 
 class AssignStmt(Stmt):
     def __init__(self, lhs: LHS, rhs: Expr):
@@ -190,7 +199,11 @@ class IfStmt(Stmt):
         self.fstmt = fstmt
 
     def __str__(self):
-        return "IfStmt({}, {}{})".format(str(self.cond), str(self.tstmt), ", " + str(self.fstmt) if self.fstmt else "")
+        return "IfStmt({}, {}{})".format(
+            str(self.cond),
+            str(self.tstmt),
+            ", " + str(self.fstmt) if self.fstmt else "",
+        )
 
 
 class ForStmt(Stmt):
@@ -201,7 +214,9 @@ class ForStmt(Stmt):
         self.stmt = stmt
 
     def __str__(self):
-        return "ForStmt({}, {}, {}, {})".format(str(self.init), str(self.cond), str(self.upd), str(self.stmt))
+        return "ForStmt({}, {}, {}, {})".format(
+            str(self.init), str(self.cond), str(self.upd), str(self.stmt)
+        )
 
 
 class WhileStmt(Stmt):
@@ -246,7 +261,9 @@ class CallStmt(Stmt):
         self.args = args
 
     def __str__(self):
-        return "CallStmt({}, {})".format(self.name, ", ".join([str(expr) for expr in self.args]))
+        return "CallStmt({}, {})".format(
+            self.name, ", ".join([str(expr) for expr in self.args])
+        )
 
 
 # Declarations
@@ -259,7 +276,9 @@ class VarDecl(Decl):
         self.init = init
 
     def __str__(self):
-        return "VarDecl({}, {}{})".format(self.name, str(self.typ), ", " + str(self.init) if self.init else "")
+        return "VarDecl({}, {}{})".format(
+            self.name, str(self.typ), ", " + str(self.init) if self.init else ""
+        )
 
 
 class ParamDecl(Decl):
@@ -270,11 +289,23 @@ class ParamDecl(Decl):
         self.inherit = inherit
 
     def __str__(self):
-        return "{}{}Param({}, {})".format("Inherit" if self.inherit else "", "Out" if self.out else "", self.name, str(self.typ))
+        return "{}{}Param({}, {})".format(
+            "Inherit" if self.inherit else "",
+            "Out" if self.out else "",
+            self.name,
+            str(self.typ),
+        )
 
 
 class FuncDecl(Decl):
-    def __init__(self, name: str, return_type: Type, params: List[ParamDecl], inherit: str or None, body: BlockStmt):
+    def __init__(
+        self,
+        name: str,
+        return_type: Type,
+        params: List[ParamDecl],
+        inherit: str or None,
+        body: BlockStmt,
+    ):
         self.name = name
         self.return_type = return_type
         self.params = params
@@ -282,7 +313,14 @@ class FuncDecl(Decl):
         self.body = body
 
     def __str__(self):
-        return "FuncDecl({}, {}, [{}], {}, {})".format(self.name, str(self.return_type), ", ".join([str(param) for param in self.params]), self.inherit if self.inherit else "None", str(self.body))
+        return "FuncDecl({}, {}, [{}], {}, {})".format(
+            self.name,
+            str(self.return_type),
+            ", ".join([str(param) for param in self.params]),
+            self.inherit if self.inherit else "None",
+            str(self.body),
+        )
+
 
 # Program
 
@@ -292,4 +330,6 @@ class Program(AST):
         self.decls = decls
 
     def __str__(self):
-        return "Program([\n\t{}\n])".format("\n\t".join([str(decl) for decl in self.decls]))
+        return "Program([\n\t{}\n])".format(
+            "\n\t".join([str(decl) for decl in self.decls])
+        )
