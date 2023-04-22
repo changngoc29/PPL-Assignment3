@@ -3,7 +3,7 @@ a: float = 3.0;
         autoFunc: function auto () {}
         test: function integer (c: integer, d: integer) {
             a: auto = arr[0];
-            a = autoFunc;
+            a = autoFunc();
         }
-        b: string = autoFunc;
+        b: string = autoFunc();
         main: function void () {}

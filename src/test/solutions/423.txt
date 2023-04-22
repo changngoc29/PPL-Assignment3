@@ -1,1 +1,1 @@
-Type mismatch in statement: AssignStmt(Id(voidfunc), IntegerLit(30))
+Type mismatch in expression: Id(voidfunc)

@@ -21,14 +21,19 @@ class Utils:
 
 
 class FunctionType:
-    def __init__(self, return_typ, params, inherit):
+    def __init__(self, return_typ, params, inherit, inherit_params=None):
         self.return_typ = return_typ
         self.params = params
         self.inherit = inherit
+        self.inherit_params = inherit_params
+        self.is_declared = False
 
     def __str__(self):
-        return "FunctionType({}, {}, {})".format(
-            str(self.return_typ), str(self.params), str(self.inherit)
+        return "FunctionType({}, {}, {}, {})".format(
+            str(self.return_typ),
+            str(self.params),
+            str(self.inherit),
+            str(self.inherit_params),
         )
 
 
@@ -138,6 +143,8 @@ class StaticChecker(Visitor):
         typ = Utils.lookup(ctx.name, o)
         if not typ:
             raise Undeclared(Identifier(), ctx.name)
+        if type(typ) is FunctionType:
+            raise TypeMismatchInExpression(ctx)
         return typ
 
     def visitArrayCell(self, ctx, o):
@@ -226,14 +233,14 @@ class StaticChecker(Visitor):
         if type(ltyp) in [FunctionType, ArrayType]:
             raise TypeMismatchInStatement(ctx)
 
-        if type(rtyp) is not FunctionType:
+        if type(rtyp) is not AutoType:
             if type(rtyp) is not type(ltyp):
                 if type(ltyp) is not FloatType or type(rtyp) is not IntegerType:
                     raise TypeMismatchInStatement(ctx)
         else:
-            if type(rtyp.return_typ) is AutoType:
-                rtyp.return_typ = ltyp
-            elif type(rtyp.return_typ) is not type(ltyp):
+            rtyp = Utils.lookup(ctx.rhs.name, o)
+            rtyp.return_typ = ltyp
+            if type(rtyp.return_typ) is not type(ltyp):
                 if (
                     type(ltyp) is not FloatType
                     or type(rtyp.return_typ) is not IntegerType
@@ -303,10 +310,10 @@ class StaticChecker(Visitor):
             raise Undeclared(Function(), ctx.name)
         args = [self.visit(arg, o) for arg in ctx.args]
         if len(args) != len(typ.params):
-            raise TypeMismatchInExpression(ctx)
+            raise TypeMismatchInStatement(ctx)
         for i in range(len(args)):
             if type(args[i]) is not type(typ.params[i]):
-                raise TypeMismatchInExpression(ctx)
+                raise TypeMismatchInStatement(ctx)
         return typ.return_typ
 
     def visitVarDecl(self, ctx, o):
@@ -336,28 +343,52 @@ class StaticChecker(Visitor):
                         raise TypeMismatchInVarDecl(ctx)
         o[0][ctx.name] = ctx.typ
 
-    def visitParamDecl(self, ctx, o):
-        # inherit NOT CHECKED
-        # out NOT CHECKED
-        # check redeclared
-        if ctx.name in o[0]:
-            raise Redeclared(Parameter(), ctx.name)
-        o[0][ctx.name] = ctx.typ
-        return ctx.typ
+    def visitParamDecl(self, ctx, o, inherit_params=None):
+        pass
 
     def visitFuncDecl(self, ctx, o):
         # check name
-        if Utils.lookup(ctx.name, o):
+        if o[0][ctx.name].is_declared:
             raise Redeclared(Function(), ctx.name)
-        # inherit NOT CHECKED
+
+        # inherit
+        inherit_params = None
+        if ctx.inherit:
+            inherited = Utils.lookup(ctx.inherit, o)
+            if not inherited:
+                raise Undeclared(Function(), ctx.inherit)
+            inherit_params = inherited.inherit_params
+        # check params
         dict = [{}]
-        params = [self.visit(decl, dict) for decl in ctx.params]
+        for param in ctx.params:
+            if inherit_params:
+                if param.name in inherit_params:
+                    raise Invalid(Parameter(), param.name)
+            if param.name in dict[0]:
+                raise Redeclared(Parameter(), param.name)
+            dict[0][param.name] = param.typ
         self.handle_block(ctx.body, o, dict)
-        o[0][ctx.name] = FunctionType(ctx.return_type, params, ctx.inherit)
+        o[0][ctx.name].is_declared = True
 
     def visitProgram(self, ctx, o):
         entry_point = False
         for decl in ctx.decls:
+            # record func basically
+            if type(decl) is FuncDecl:
+                param_types = []
+                inherit_dict = {}
+                for param in decl.params:
+                    param_types.append(param.typ)
+                    if param.inherit:
+                        inherit_dict[param.name] = param.typ
+                if len(inherit_dict) != 0:
+                    o[0][decl.name] = FunctionType(
+                        decl.return_type, param_types, decl.inherit, inherit_dict
+                    )
+                else:
+                    o[0][decl.name] = FunctionType(
+                        decl.return_type, param_types, decl.inherit
+                    )
             # check if main() existed
             if (
                 (type(decl) is FuncDecl)
@@ -366,15 +397,7 @@ class StaticChecker(Visitor):
                 and (len(decl.params) == 0)
             ):
                 entry_point = True
+        [self.visit(decl, o) for decl in ctx.decls]
         if not entry_point:
             raise NoEntryPoint()
-        [self.visit(decl, o) for decl in ctx.decls]
         return [str(ctx)]
-
-
-# Notes:
-# Functions inherit and invoke can be declared after its use (not done)
-# Check inherit of function and handle inherit parameter (not done)
-# inherit function first stmt (not done) ?
-# When use a function as a variable -> type mismatch or undeclared ???
-# auto function inference (done)

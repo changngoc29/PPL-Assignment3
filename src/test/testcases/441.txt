@@ -2,8 +2,8 @@ a: boolean = true;
         test: function auto () {}
         main: function void () {
             a: integer = 4;
-            c: string;
-            a = test;
+            c: float;
+            a = test();
         }
-        c: string = test;
+        c: string = test();
         

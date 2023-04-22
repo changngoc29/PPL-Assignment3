@@ -1,1 +1,1 @@
-Type mismatch in Variable Declaration: VarDecl(c, StringType, Id(test))
+Type mismatch in Variable Declaration: VarDecl(c, StringType, FuncCall(test, []))
