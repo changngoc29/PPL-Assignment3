@@ -569,3 +569,57 @@ class CheckerSuite(unittest.TestCase):
         """
         expect = "Invalid statement in function: func1"
         self.assertTrue(TestChecker.test(input, expect, 453))
+
+    def test54(self):
+        input = """a: boolean = true;
+        func1: function auto (d: integer, c: integer) inherit func0 {
+            super(c, 20);
+            return 20;
+            return false;
+            if (true) return "string";
+        }
+        func0: function void (inherit a: integer, inherit b: integer) {}
+        main: function void () {}
+        """
+        expect = "Type mismatch in statement: ReturnStmt(StringLit(string))"
+        self.assertTrue(TestChecker.test(input, expect, 454))
+
+    def test55(self):
+        input = """a: boolean = true;
+        func1: function auto (d: integer, c: integer) inherit func0 {
+            super(c, 20);
+            return 20;
+            return false;
+            if (true) {
+                return 40;
+                return "string";
+            }
+            for (c = 0, c<10, c+3) return false;
+        }
+        func0: function void (inherit a: integer, inherit b: integer) {}
+        main: function void () {}
+        """
+        expect = "Type mismatch in statement: ReturnStmt(BooleanLit(False))"
+        self.assertTrue(TestChecker.test(input, expect, 455))
+
+    def test56(self):
+        input = """a: boolean = true;
+        func1: function auto (d: integer, c: integer) inherit func0 {
+            super(c, 20);
+            return 20;
+            return false;
+            if (true) {
+                return 40;
+                return "string";
+            }
+            do {
+                return 20;
+                return "string";
+            } while (true);
+            while (false) return "while return";
+        }
+        func0: function void (inherit a: integer, inherit b: integer) {}
+        main: function void () {}
+        """
+        expect = "Type mismatch in statement: ReturnStmt(StringLit(while return))"
+        self.assertTrue(TestChecker.test(input, expect, 456))

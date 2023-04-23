@@ -56,6 +56,7 @@ class FunctionType:
 
 class StaticChecker(Visitor):
     is_in_loop = False
+    curr_func = None
 
     def __init__(self, ast):
         self.ast = ast
@@ -95,6 +96,12 @@ class StaticChecker(Visitor):
             raise MustInLoop(con_br)
         o = local_o[1:]
         return stmtlist
+
+    def handle_return_stmt(self, typ, return_stmt):
+        if type(StaticChecker.curr_func.return_typ) is AutoType:
+            StaticChecker.curr_func.return_typ = typ
+        elif type(typ) is not type(StaticChecker.curr_func.return_typ):
+            raise TypeMismatchInStatement(return_stmt)
 
     def check_continue_break(self, liststmt):
         for stmt in liststmt:
@@ -289,18 +296,33 @@ class StaticChecker(Visitor):
         return ltyp
 
     def visitBlockStmt(self, ctx, o):
-        # inherit NOT DONE
-        [self.visit(x, o) for x in ctx.body]
+        return_count = 0
+        for stmt in ctx.body:
+            if type(stmt) is ReturnStmt and return_count == 0:
+                return_count += 1
+                typ = self.visit(stmt, o)
+                self.handle_return_stmt(typ, stmt)
+
+            else:
+                self.visit(stmt, o)
         return ctx.body
 
     def visitIfStmt(self, ctx, o):
         cond_typ = self.visit(ctx.cond, o)
         if type(cond_typ) is not BooleanType:
             raise TypeMismatchInStatement(ctx)
+
         if type(ctx.tstmt) is BlockStmt:
             self.handle_block(ctx.tstmt, o)
+        elif type(ctx.tstmt) is ReturnStmt:
+            typ = self.visit(ctx.tstmt, o)
+            self.handle_return_stmt(typ, ctx.tstmt)
+
         if type(ctx.fstmt) is BlockStmt:
             self.handle_block(ctx.fstmt, o)
+        elif type(ctx.fstmt) is ReturnStmt:
+            typ = self.visit(ctx.fstmt, o)
+            self.handle_return_stmt(typ, ctx.fstmt)
 
     def visitForStmt(self, ctx, o):
         init_typ = self.visit(ctx.init, o)
@@ -312,7 +334,10 @@ class StaticChecker(Visitor):
             or type(upd_typ) is not IntegerType
         ):
             raise TypeMismatchInStatement(ctx)
-        if type(ctx.stmt) is BlockStmt:
+        if type(ctx.stmt) is ReturnStmt:
+            typ = self.visit(ctx.stmt, o)
+            self.handle_return_stmt(typ, ctx.stmt)
+        elif type(ctx.stmt) is BlockStmt:
             StaticChecker.is_in_loop = True
             self.handle_block(ctx.stmt, o)
             StaticChecker.is_in_loop = False
@@ -321,7 +346,10 @@ class StaticChecker(Visitor):
         cond_typ = self.visit(ctx.cond, o)
         if type(cond_typ) is not BooleanType:
             raise TypeMismatchInStatement(ctx)
-        if type(ctx.stmt) is BlockStmt:
+        if type(ctx.stmt) is ReturnStmt:
+            typ = self.visit(ctx.stmt, o)
+            self.handle_return_stmt(typ, ctx.stmt)
+        elif type(ctx.stmt) is BlockStmt:
             StaticChecker.is_in_loop = True
             self.handle_block(ctx.stmt, o)
             StaticChecker.is_in_loop = False
@@ -418,7 +446,9 @@ class StaticChecker(Visitor):
         # merge inherit_params and local_dict
         if inherit_params:
             local_dict[0].update(inherit_params)
+        StaticChecker.curr_func = o[0][ctx.name]
         self.handle_block(ctx.body, o, local_dict, inherited, ctx.name)
+        StaticChecker.curr_func = None
         o[0][ctx.name].is_declared = True
 
     def visitProgram(self, ctx, o):
@@ -452,4 +482,5 @@ class StaticChecker(Visitor):
         [self.visit(decl, o) for decl in ctx.decls]
         if not entry_point:
             raise NoEntryPoint()
+        Utils.show_dict(o)
         return [str(ctx)]

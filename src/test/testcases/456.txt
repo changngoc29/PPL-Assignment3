@@ -1,0 +1,18 @@
+a: boolean = true;
+        func1: function auto (d: integer, c: integer) inherit func0 {
+            super(c, 20);
+            return 20;
+            return false;
+            if (true) {
+                return 40;
+                return "string";
+            }
+            do {
+                return 20;
+                return "string";
+            } while (true);
+            while (false) return "while return";
+        }
+        func0: function void (inherit a: integer, inherit b: integer) {}
+        main: function void () {}
+        
