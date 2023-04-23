@@ -1,8 +1,8 @@
-a: array [2, 2, 1] of auto = {{{1},{2.5}}, {{--1},{-4}}};
-        c: array [2, 1] of float = a[0];
+a: array [2, 2, 1] of auto = {{{1},{2}}, {{--1},{-4}}};
+        c: array [2, 1] of integer = a[0];
         main: function void () {
             if (!!(c[0, 0] > 5)) {
-                b: integer = a[1,1,0];
+                b: float = a[1,1,2+2];
             }
-            c: auto = 4;
+            c: auto;
         }

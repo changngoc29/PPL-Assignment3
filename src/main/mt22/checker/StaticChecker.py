@@ -227,33 +227,16 @@ class StaticChecker(Visitor):
         dimensions = [len(ctx.explist)]
         root_typ = self.visit(ctx.explist[0], o)
 
-        float_int_infer = False
-
         for i in range(1, len(ctx.explist)):
             exp_typ = self.visit(ctx.explist[i], o)
             # check type in explist
             if type(root_typ) is not type(exp_typ):
-                if (type(root_typ) is FloatType and type(exp_typ) is IntegerType) or (
-                    type(root_typ) is IntegerType and type(exp_typ) is FloatType
-                ):
-                    root_typ = FloatType()
-                else:
-                    raise IllegalArrayLiteral(ctx)
+                raise IllegalArrayLiteral(ctx)
             # check with ArrayType
             if type(root_typ) is ArrayType:
                 # check typ and len of ArrayType
                 if type(root_typ.typ) is not type(exp_typ.typ):
-                    if (
-                        type(root_typ.typ) is IntegerType
-                        and type(exp_typ.typ) is FloatType
-                    ) or (
-                        type(root_typ.typ) is FloatType
-                        and type(exp_typ.typ) is IntegerType
-                    ):
-                        float_int_infer = True
-                    else:
-                        raise IllegalArrayLiteral(ctx)
-
+                    raise IllegalArrayLiteral(ctx)
                 if len(root_typ.dimensions) != len(exp_typ.dimensions):
                     raise IllegalArrayLiteral(ctx)
                 # check num of element in ArrayType
@@ -263,8 +246,6 @@ class StaticChecker(Visitor):
         if type(root_typ) is ArrayType:
             dimensions += root_typ.dimensions
         return_typ = root_typ.typ if type(root_typ) is ArrayType else root_typ
-        if float_int_infer:
-            return_typ = FloatType()
         return ArrayType(dimensions, return_typ)
 
     def visitFuncCall(self, ctx, o):

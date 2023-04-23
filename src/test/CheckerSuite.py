@@ -489,32 +489,32 @@ class CheckerSuite(unittest.TestCase):
         b: integer = a[1,1,0];
         c: auto = 4;
         main: function void () {}"""
-        expect = "Type mismatch in Variable Declaration: VarDecl(c, ArrayType([2, 1], IntegerType), ArrayCell(a, [IntegerLit(0)]))"
+        expect = "Illegal array literal: ArrayLit([ArrayLit([IntegerLit(1)]), ArrayLit([FloatLit(2.5)])])"
         self.assertTrue(TestChecker.test(input, expect, 447))
 
     def test48(self):
-        input = """a: array [2, 2, 1] of auto = {{{1},{2.5}}, {{--1},{-4}}};
-        c: array [2, 1] of float = a[0];
+        input = """a: array [2, 2, 1] of auto = {{{1},{2}}, {{--1},{-4}}};
+        c: array [2, 1] of integer = a[0];
         main: function void () {
             if (!!(c[0, 0] > 5)) {
-                b: integer = a[1,1,0];
+                b: float = a[1,1,2+2];
             }
-            c: auto = 4;
+            c: auto;
         }"""
-        expect = "Type mismatch in Variable Declaration: VarDecl(b, IntegerType, ArrayCell(a, [IntegerLit(1), IntegerLit(1), IntegerLit(0)]))"
+        expect = "Invalid Variable: c"
         self.assertTrue(TestChecker.test(input, expect, 448))
 
     def test49(self):
-        input = """a: array [2, 2, 1] of auto = {{{1},{2.5}}, {{--(1+2)},{-4}}};
+        input = """a: array [2, 2, 1] of auto = {{{1},{2}}, {{--(1+2)},{-4}}};
         test: function auto (a: auto, b: integer) {}
         main: function void () {
             d: integer = test(a[0,0,0], 5);
             c: auto = !(d < -5);
             if (c) {
-                a: boolean = test(5, 0);
+                a: boolean = test(5.0, 0);
             }
         }"""
-        expect = "Type mismatch in Variable Declaration: VarDecl(a, BooleanType, FuncCall(test, [IntegerLit(5), IntegerLit(0)]))"
+        expect = "Type mismatch in expression: FuncCall(test, [FloatLit(5.0), IntegerLit(0)])"
         self.assertTrue(TestChecker.test(input, expect, 449))
 
     def test50(self):
